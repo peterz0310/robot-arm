@@ -7,7 +7,8 @@
 
 // GPIO mapping for each servo
 constexpr int servoPins[] = {4, 5, 12, 13, 14, 18, 19};
-// Index order: base, armA, armB, wristA, wristB, gripper
+// Index order: base, armA1, armA2(mirrored), armB, wristA, wristB, gripper
+// Note: armA2 is computed as 180 - armA1, so we only track 6 angles
 
 // Wi-Fi credentials and websocket setup
 constexpr char WIFI_SSID[] = "Apt 210";
@@ -16,8 +17,9 @@ constexpr uint16_t HTTP_PORT = 80;
 constexpr char WS_PATH[] = "/arm";
 
 // Per-joint home and limit configuration (adjust as needed for your rig)
-constexpr float HOME_ANGLES[6] = {90.0f, 90.0f, 90.0f, 90.0f, 90.0f, 90.0f};
-constexpr float MIN_ANGLES[6] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+// Index order: base, armA1, armB, wristA, wristB, gripper (armA2 is mirrored from armA1)
+constexpr float HOME_ANGLES[6] = {90.0f, 180.0f, 180.0f, 90.0f, 90.0f, 180.0f};
+constexpr float MIN_ANGLES[6] = {0.0f, 20.0f, 0.0f, 0.0f, 0.0f, 100.0f};
 constexpr float MAX_ANGLES[6] = {180.0f, 180.0f, 180.0f, 180.0f, 180.0f, 180.0f};
 
 // Slew limiting
@@ -366,12 +368,13 @@ void setup()
   servo7.attach(servoPins[6]);
 
   // Initialize state to home
+  // Assume physical startup position already matches HOME_ANGLES (open-loop calibration)
+  // Don't write to servos - they're already at home position
   for (int i = 0; i < 6; i++)
   {
     currentAngles[i] = HOME_ANGLES[i];
     targetAngles[i] = HOME_ANGLES[i];
   }
-  writeServos();
 
   connectWiFi();
 
